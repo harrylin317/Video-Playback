@@ -2,13 +2,17 @@ import os
 import pandas as pd
 from audio_processing.extract_audio import extract_audio
 from audio_processing.audio_to_text import audio_to_text
+from nlp_processing.combine_words import combine_words
 from nlp_processing.analyze_transcript import analyze_transcript
+import json
+
 
 if __name__ == "__main__":
     
     video_path = "test_video.mp4"
     audio_path = "audio_long.wav"
-    transcript_path = "transcript_long.csv"
+    df_path = "text_df.csv"
+    transcript_path = "transcript.json"
 
     # Convert video to audio file
     if not os.path.exists(audio_path):
@@ -28,7 +32,13 @@ if __name__ == "__main__":
             print("Failed to convert audio to text, aborting...")
             exit()
 
-    #load transcript file
-    df = pd.read_csv(transcript_path)
+    with open(transcript_path, 'r') as f:
+        transcript = json.load(f)
+
+    # combine words into sentences
+    df = combine_words(transcript)    
+
+    # analyze complexity
+    df = analyze_transcript(df)
     
-    # analyze_transcript(transcript)
+    df.to_csv(df_path, index=False)

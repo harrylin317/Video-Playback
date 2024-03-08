@@ -25,8 +25,8 @@ def audio_to_text(audio_file_path, transcript_path):
             feature_extractor=processor.feature_extractor,
             max_new_tokens=128,
             chunk_length_s=30,
-            batch_size=16,
-            return_timestamps=True,
+            batch_size=1,
+            return_timestamps='word',
             torch_dtype=torch_dtype,
             device=device,
             generate_kwargs={"language": "english"},
@@ -34,18 +34,13 @@ def audio_to_text(audio_file_path, transcript_path):
 
         result = pipe(audio_file_path)
 
-        convert_to_csv(result, transcript_path)
+        with open(transcript_path, 'w') as f:
+            json.dump(result, f)
 
         return 0
     except Exception as e:
         print(f"Error occurred when convertin audio to text: {e}")
         return 1
     
-def convert_to_csv(transcript, transcript_path):
-    df = pd.DataFrame(columns=['timestamp', 'text'])
-    chunks = transcript['chunks']
-    for chunk in chunks:
-        new_row = pd.DataFrame({'timestamp': [chunk['timestamp']], 'text': [chunk['text']]})
-        df = pd.concat([df, new_row], ignore_index=True)
-    df.to_csv(transcript_path, index=False)
+
 
