@@ -3,7 +3,8 @@ import pandas as pd
 from audio_processing.extract_audio import extract_audio
 from audio_processing.audio_to_text import audio_to_text
 from nlp_processing.combine_words import combine_words
-from nlp_processing.analyze_transcript import analyze_transcript
+from nlp_processing.analyze_text import analyze_text
+from video_processing.slow_video import slow_video
 import json
 
 
@@ -32,13 +33,18 @@ if __name__ == "__main__":
             print("Failed to convert audio to text, aborting...")
             exit()
 
-    with open(transcript_path, 'r') as f:
-        transcript = json.load(f)
+    if not os.path.exists(df_path):
+        with open(transcript_path, 'r') as f:
+            transcript = json.load(f)
 
-    # combine words into sentences
-    df = combine_words(transcript)    
+        # combine words into sentences
+        df = combine_words(transcript)    
 
-    # analyze complexity
-    df = analyze_transcript(df)
+        # analyze text
+        df = analyze_text(df)
+        
+        df.to_csv(df_path, index=False)
+
+    df = pd.read_csv(df_path)
+    slow_video(df, video_path)
     
-    df.to_csv(df_path, index=False)
