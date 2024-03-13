@@ -6,11 +6,13 @@ import traceback
 
 class TextProcessing:
     @staticmethod
-    def calculate_wpm(row):
+    def calculate_wpm(row, threshold_wpm):
         num_words = len(row['text'].split())
         duration_in_minute = (row['timestamp'][1] - row['timestamp'][0]) / 60
         # prevent division by 0
-        duration_in_minute = max(duration_in_minute, 0.1)
+        if duration_in_minute == 0:
+            return threshold_wpm
+        duration_in_minute = max(duration_in_minute, 0.001)
         wpm = num_words / duration_in_minute
         return round(wpm, 2)
     
@@ -18,11 +20,11 @@ class TextProcessing:
     #     score = textstat.flesch_reading_ease(text)
     #     return score
 
-    def analyze_text(self, df, df_path):
+    def analyze_text(self, df, df_path, threshold_wpm):
         try:
             print('Analyzing text...')
             # df['complexity'] = df['text'].apply(flesch_reading_ease)
-            df['wpm'] = df.apply(self.calculate_wpm, axis=1)
+            df['wpm'] = df.apply(self.calculate_wpm, threshold_wpm=threshold_wpm, axis=1)
             df.to_csv(df_path, index=False)
             print('Successfully analyzed text, Dataframe file created')
             return 0
@@ -37,7 +39,7 @@ class TextProcessing:
             words = transcript['chunks']
             sentence = ""
             start_time = words[0]['timestamp'][0]
-            sentence_end_chars = {'.', '!', '?'}
+            # sentence_end_chars = {'.', '!', '?'}
 
             df = pd.DataFrame(columns=['timestamp', 'text'])
             end_index = len(words) - 1
@@ -50,9 +52,11 @@ class TextProcessing:
                 word = word_info['text']
                 sentence += word
 
-                # if word ends with '.', '!', '?' stop the sentence, add to df, start a new sentence
+                # (removed) if word ends with '.', '!', '?' stop the sentence, add to df, start a new sentence
+                # if there has been 15 words in the sentence, end the sentence
                 # if word is the last word in the transcript, end the sentence as well
-                if word[-1] in sentence_end_chars or i == end_index:
+                # if word[-1] in sentence_end_chars or i == end_index:
+                if (i + 1) % 15 == 0 or i == end_index:
                     end_time = word_info['timestamp'][1]
                     new_row = pd.DataFrame({'timestamp': [(start_time, end_time)], 'text': [sentence.strip()]})
                     df = pd.concat([df, new_row], ignore_index=True)
@@ -69,6 +73,7 @@ class TextProcessing:
     def process(self, args):
         df_path = args['df_path']
         transcript_path = args['transcript_path']
+        threshold_wpm = args['threshold_wpm']
         if not os.path.exists(df_path):
             if os.path.exists(transcript_path):
                 with open(transcript_path, 'r') as f:
@@ -78,7 +83,7 @@ class TextProcessing:
                 if status != 0:
                     return -1
 
-                status = self.analyze_text(df, df_path)
+                status = self.analyze_text(df, df_path, threshold_wpm)
                 if status != 0:
                     return -1
             else:

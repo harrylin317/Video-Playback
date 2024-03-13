@@ -4,7 +4,6 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips
 import moviepy.video.fx.all as vfx
 import os
 import traceback
-import math
 
 class VideoProcessing:
     @staticmethod
@@ -45,8 +44,11 @@ class VideoProcessing:
 
                 # loop through timestamps
                 for i in range(len(timestamps)):
+                    # print('loop')
+
                     start_time, end_time = timestamps[i]
                     slow_ratio = slow_ratios[i]
+                    # print(start_time, end_time)
 
                     # Slow down video during the time interval
                     slowed_clip = video.subclip(start_time, end_time).fx(vfx.speedx, slow_ratio)
