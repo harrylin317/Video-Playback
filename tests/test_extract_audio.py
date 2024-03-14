@@ -1,5 +1,5 @@
 import unittest
-from audio_processing.audio_processing import extract_audio
+from audio_to_text.audio_to_text import extract_audio
 
 class TestExtractAudio(unittest.TestCase):
     def test_extract_audio_valid_input(self):

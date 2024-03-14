@@ -1,7 +1,8 @@
 import time
-from audio_processing.audio_processing import AudioProcessing
-from text_processing.text_processing import TextProcessing
-from video_processing.video_processing import VideoProcessing
+from extract_audio.extract_audio import ExtractAudio
+from audio_to_text.audio_to_text import AudioToText
+from analyze_text.analyze_text import AnalyzeText
+from process_video.process_video import ProcessVideo
 from pipeline_processing.pipeline_processing import Pipeline
 
 
@@ -12,10 +13,14 @@ if __name__ == "__main__":
         "df_path" : "text_df.csv",
         "transcript_path" : "transcript.json",
         "output_path" : "output.mp4",
-        "threshold_wpm" : 160
+        "threshold_wpm" : 180,
+        "run_extract_audio" : False,
+        "run_audio_to_text": False,  
+        "run_analyze_text": True,   
+        "run_process_video": True  
     }
     start_time = time.time()
-    pipeline = Pipeline([AudioProcessing(), TextProcessing(), VideoProcessing()])
+    pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), ProcessVideo()])
     status = pipeline.run(args)
     if status != 0:
         exit()

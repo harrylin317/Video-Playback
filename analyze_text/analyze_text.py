@@ -4,7 +4,7 @@ import json
 import os
 import traceback
 
-class TextProcessing:
+class AnalyzeText:
     @staticmethod
     def calculate_wpm(row, threshold_wpm):
         num_words = len(row['text'].split())
@@ -36,9 +36,9 @@ class TextProcessing:
     def combine_words(self, transcript):
         try:
             print('Combining words from transcript...')
-            words = transcript['chunks']
+            words = transcript
             sentence = ""
-            start_time = words[0]['timestamp'][0]
+            start_time = words[0]['start']
             # sentence_end_chars = {'.', '!', '?'}
 
             df = pd.DataFrame(columns=['timestamp', 'text'])
@@ -46,24 +46,23 @@ class TextProcessing:
             for i, word_info in enumerate(words):
                 # if last word was the end of sentence, initialize starting timestamp
                 if start_time == None:
-                    start_time = word_info['timestamp'][0]
+                    start_time = word_info['start']
 
                 # append word to sentence
-                word = word_info['text']
-                sentence += word
+                word = word_info['word']
+                sentence = sentence + ' ' + word
 
                 # (removed) if word ends with '.', '!', '?' stop the sentence, add to df, start a new sentence
                 # if there has been 15 words in the sentence, end the sentence
                 # if word is the last word in the transcript, end the sentence as well
                 # if word[-1] in sentence_end_chars or i == end_index:
                 if (i + 1) % 15 == 0 or i == end_index:
-                    end_time = word_info['timestamp'][1]
+                    end_time = word_info['end']
                     new_row = pd.DataFrame({'timestamp': [(start_time, end_time)], 'text': [sentence.strip()]})
                     df = pd.concat([df, new_row], ignore_index=True)
                     sentence = ""
                     start_time = None
                 
-            # df.to_csv(df_path, index=False)
             return df, 0
         except Exception as e:
             print(f"Error occurred when combining words: {e}")
@@ -71,25 +70,26 @@ class TextProcessing:
             return None, -1
     
     def process(self, args):
-        df_path = args['df_path']
-        transcript_path = args['transcript_path']
-        threshold_wpm = args['threshold_wpm']
-        if not os.path.exists(df_path):
+        if args['run_analyze_text']:
+            df_path = args['df_path']
+            transcript_path = args['transcript_path']
+            threshold_wpm = args['threshold_wpm']
             if os.path.exists(transcript_path):
                 with open(transcript_path, 'r') as f:
                     transcript = json.load(f)
 
-                df, status= self.combine_words(transcript)
+                df, status = self.combine_words(transcript)
                 if status != 0:
                     return -1
 
                 status = self.analyze_text(df, df_path, threshold_wpm)
                 if status != 0:
                     return -1
+                
+                return 0
             else:
                 print('Transcript file does not exist')
                 return -1
         else:
-            print('Dataframe file already exists.')
-
-        return 0
+            print('Skip analyzing text')
+            return 0

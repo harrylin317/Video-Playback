@@ -5,7 +5,7 @@ import moviepy.video.fx.all as vfx
 import os
 import traceback
 
-class VideoProcessing:
+class ProcessVideo:
     @staticmethod
     def filter_timestamps(df, threshold_wpm):
         filtered_df = df[df['wpm'] > threshold_wpm]
@@ -44,11 +44,9 @@ class VideoProcessing:
 
                 # loop through timestamps
                 for i in range(len(timestamps)):
-                    # print('loop')
 
                     start_time, end_time = timestamps[i]
                     slow_ratio = slow_ratios[i]
-                    # print(start_time, end_time)
 
                     # Slow down video during the time interval
                     slowed_clip = video.subclip(start_time, end_time).fx(vfx.speedx, slow_ratio)
@@ -79,23 +77,22 @@ class VideoProcessing:
             return -1
             
     def process(self, args):
-        df_path = args['df_path']
-        video_path = args['video_path']
-        output_path = args['output_path']
-        threshold_wpm = args['threshold_wpm']
+        if args['run_process_video']:
+            df_path = args['df_path']
+            video_path = args['video_path']
+            output_path = args['output_path']
+            threshold_wpm = args['threshold_wpm']
 
-        if not os.path.exists(output_path):
             if os.path.exists(df_path):
                 df = pd.read_csv(df_path)
                 status = self.slow_video(df, video_path, output_path, threshold_wpm)
-                if status != 0:
-                    return -1
+                return status
             else:
                 print('Dataframe file does not exists.')
                 return -1
         else:
-            print('Output video file alreay exists.')
-        return 0
+            print('Skip video processing')
+            return 0
 
 
 
