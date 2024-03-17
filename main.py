@@ -8,15 +8,16 @@ from pipeline_processing.pipeline_processing import Pipeline
 
 if __name__ == "__main__":
     args = {
-        "video_path" : "video_2.mp4",
-        "audio_path" : "audio_2.wav",
-        "df_path" : "text_df.csv",
-        "transcript_path" : "transcript.json",
-        "output_path" : "output.mp4",
-        "threshold_wpm" : 180,
+        "video_path" : "video_3.mp4",
+        "audio_path" : "audio_3.wav",
+        "df_path" : "text_3.csv",
+        "transcript_path" : "transcript_3.json",
+        "output_path" : "output_3.mp4",
+        "split_max" : 15,
+        "threshold_wpm" : 170,
         "run_extract_audio" : False,
         "run_audio_to_text": False,  
-        "run_analyze_text": True,   
+        "run_analyze_text": False,   
         "run_process_video": True  
     }
     start_time = time.time()
