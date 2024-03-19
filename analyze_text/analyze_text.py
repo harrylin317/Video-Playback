@@ -15,17 +15,18 @@ class AnalyzeText:
         duration_in_minute = max(duration_in_minute, 0.001)
         wpm = num_words / duration_in_minute
         return round(wpm, 2)
-    
-    # def flesch_reading_ease(text):
-    #     score = textstat.flesch_reading_ease(text)
-    #     return score
+    @staticmethod
+    def combine_tuples(row):
+        return (row['timestamp'][0], row['timestamp'][1], row['slow_ratio'])
+
     def analyze_text(self, df, df_path, threshold_wpm):
         try:
             print('Analyzing text...')
-            # df['complexity'] = df['text'].apply(flesch_reading_ease)
             df['wpm'] = df.apply(self.calculate_wpm, threshold_wpm=threshold_wpm, axis=1)
             # calculate slow ratio. Equals 1 if not need slowing
-            df['slow_ratio'] = df['wpm'].apply(lambda wpm: (threshold_wpm/wpm) if wpm > threshold_wpm else 1)
+            # df['slow_ratio'] = df['wpm'].apply(lambda wpm: (threshold_wpm/wpm) if wpm > threshold_wpm else 1)
+            df['slow_ratio'] = df['wpm'].apply(lambda wpm: round((wpm/threshold_wpm), 2) if wpm > threshold_wpm else 1)
+            df['time+slow'] = df.apply(lambda row : self.combine_tuples(row), axis=1)
             df.to_csv(df_path, index=False)
             print('Successfully analyzed text, Dataframe file created')
             return 0
@@ -75,10 +76,10 @@ class AnalyzeText:
                 sentence = sentence + ' ' + word
                 # char_count += len(word)
                 
-                # if there has been 15 words in the sentence, end the sentence
+                # if there has been split_max words in the sentence, end the sentence
                 # if word is the last word in the transcript, end the sentence as well
                 # if char_count >= split_max or i == end_index:
-                if (i + 1) % 15 == 0 or i == end_index:
+                if (i + 1) % split_max == 0 or i == end_index:
                     
                     new_row = pd.DataFrame({'timestamp': [(record_start_time, end_time)], 'text': [sentence.strip()], 'word_timestamp_list': [word_timestamp_list]})
                     df = pd.concat([df, new_row], ignore_index=True)

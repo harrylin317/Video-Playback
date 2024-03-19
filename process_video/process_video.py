@@ -196,7 +196,7 @@ class ProcessVideo:
 
                 # Write the result to a file
             # final_clip.write_videofile(output_path, audio_codec='aac', threads=10, fps=24, preset='ultrafast')
-            final_clip.write_videofile(output_path, audio_codec='aac', threads=10, fps=24, logger=None, preset='ultrafast')
+            final_clip.write_videofile(output_path, audio_codec='aac', threads=10, fps=24, preset='ultrafast')
             print('Slowed video created successfully')
             return 0
         

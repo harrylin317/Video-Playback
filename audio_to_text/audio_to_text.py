@@ -8,6 +8,7 @@ import gc
 class AudioToText:        
     def audio_to_text(self, audio_path, transcript_path):  
         try:  
+            print('Extracting text from audio...')
             device = "cuda" 
             audio_file = audio_path
             batch_size = 8 # reduce if low on GPU mem
