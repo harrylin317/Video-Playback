@@ -6,11 +6,12 @@ from analyze_text.analyze_text import AnalyzeText
 from process_video.process_video import ProcessVideo
 from pipeline_processing.pipeline_processing import Pipeline
 from slow_video.slow_video import SlowVideo
-
+from play_video.play_video import PlayVideo
 
 if __name__ == "__main__":
     video_number = '1'
     save_path = f'outputs/output_{video_number}/'
+    # save_path = f'outputs/'
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -18,19 +19,22 @@ if __name__ == "__main__":
     args = {
         "video_path" : f"video_{video_number}.mp4",
         "audio_path" : os.path.join(save_path, "audio.wav"),
+        # "audio_path" : "recording.m4a",
         "df_path" : os.path.join(save_path, "text.csv"),
         "transcript_path" : os.path.join(save_path, "transcript.json"),
         "output_path" : os.path.join(save_path, "output.mp4"),
         "split_max" : 15,
-        "threshold_wpm" : 170,
+        "threshold_wpm" : 160,
         "run_extract_audio" : False,
         "run_audio_to_text": False,  
         "run_analyze_text": False,   
-        "run_process_video": True  
+        "run_process_video": True,
+        "run_video_player" : False 
     }
     start_time = time.time()
     # pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), ProcessVideo()])
     pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), SlowVideo()])
+    # pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), PlayVideo()])
     status = pipeline.run(args)
     if status != 0:
         exit()

@@ -50,10 +50,27 @@ class AnalyzeText:
             for i, word_info in enumerate(words):
 
                 # handle the case for numbers e.g. '1980' with no start or end timestamps
+                
                 if 'start' not in word_info:
                     if i == end_index:
                         word_info['start'] = words[i-1]['end']
                         word_info['end'] = words[i-1]['end'] + 3
+                    #if next word is also an abonormal word
+                    # keep searching for the next word and eventually find one that is a normal word
+                    # Divide the timestamp between the two normal words to find a average timestamp and allocate them to the abnormal cases 
+                    elif 'start' not in words[i+1]:
+                        next_idx = i + 1
+                        divide = 1
+                        while 'start' not in words[next_idx]:
+                            next_idx += 1
+                            divide += 1
+                        next_time = words[next_idx]['start']
+                        prev_time = words[i-1]['end']
+                        divided_interval = round((next_time - prev_time) / divide, 3)
+                        end_time = prev_time + divided_interval
+                        word_info['start'] = prev_time
+                        word_info['end'] = end_time
+                    #if abnormal word is the first word, give it a artificial 3 seconds of timeframe
                     elif i == 0:
                         word_info['start'] = max(0, words[i+1]['start'] - 3)
                         word_info['end'] = words[i+1]['start']
