@@ -24,12 +24,12 @@ if __name__ == "__main__":
         "transcript_path" : os.path.join(save_path, "transcript.json"),
         "output_path" : os.path.join(save_path, "output.mp4"),
         "split_max" : 15,
-        "threshold_wpm" : 160,
+        "threshold_wpm" : 170,
         "run_extract_audio" : False,
         "run_audio_to_text": False,  
         "run_analyze_text": False,   
         "run_process_video": True,
-        "run_video_player" : False 
+        "run_video_player" : True 
     }
     start_time = time.time()
     # pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), ProcessVideo()])
