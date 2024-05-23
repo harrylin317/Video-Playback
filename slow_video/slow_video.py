@@ -223,8 +223,8 @@ class SlowVideo:
                 segments = self.fill_segments(split_videos, segments)
                 # print(segments)
                 # status = self.slow_down_video(video_path, output_path, segments)
-                status = self.slow(output_path, split_videos, segments)
-                return status
+                #status = self.slow(output_path, split_videos, segments)
+                # return status
                 return 0
             else:
                 print('Dataframe file does not exists.')

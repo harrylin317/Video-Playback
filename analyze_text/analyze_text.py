@@ -24,8 +24,8 @@ class AnalyzeText:
             print('Analyzing text...')
             df['wpm'] = df.apply(self.calculate_wpm, threshold_wpm=threshold_wpm, axis=1)
             # calculate slow ratio. Equals 1 if not need slowing
-            # df['slow_ratio'] = df['wpm'].apply(lambda wpm: (threshold_wpm/wpm) if wpm > threshold_wpm else 1)
-            df['slow_ratio'] = df['wpm'].apply(lambda wpm: min(round((wpm/threshold_wpm), 2), 2) if wpm > threshold_wpm else 1)
+            df['slow_ratio'] = df['wpm'].apply(lambda wpm: round((threshold_wpm/wpm), 2) if wpm > threshold_wpm else 1)
+            # df['slow_ratio'] = df['wpm'].apply(lambda wpm: min(round((wpm/threshold_wpm), 2), 2) if wpm > threshold_wpm else 1)
             df['time+slow'] = df.apply(lambda row : self.combine_tuples(row), axis=1)
             df.to_csv(df_path, index=False)
             print('Successfully analyzed text, Dataframe file created')
