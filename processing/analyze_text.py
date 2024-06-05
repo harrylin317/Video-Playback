@@ -3,6 +3,8 @@ import pandas as pd
 import json
 import os
 import traceback
+import moviepy.editor as mp
+
 
 class AnalyzeText:
     @staticmethod
@@ -15,11 +17,37 @@ class AnalyzeText:
         duration_in_minute = max(duration_in_minute, 0.001)
         wpm = num_words / duration_in_minute
         return round(wpm, 2)
+    
     @staticmethod
     def combine_tuples(row):
         return (row['timestamp'][0], row['timestamp'][1], row['slow_ratio'])
 
-    def analyze_text(self, df, df_path, threshold_wpm):
+    @staticmethod
+    def fill_segments(vid, segments):
+        video = mp.VideoFileClip(vid)
+        duration = video.duration
+        video.close()
+
+        # Add beginning segments
+        if segments[0][0] > 0:
+            segments.insert(0, (0, segments[0][0], 1))
+        
+        # Add the remaining segments of the video
+        if segments[-1][1] < duration:
+            segments.append((segments[-1][1], duration, 1))
+
+        # Add the segments in between the segments
+        i = 0
+        while i < len(segments) - 1:
+            # If time between segments is small, stretch the previous end to match the next timestamp's start
+            if segments[i+1][0] - segments[i][1] <= 0.5:
+                segments[i] = (segments[i][0], segments[i+1][0], segments[i][2])
+            else:
+                segments.insert(i+1, (segments[i][1], segments[i+1][0], 1))
+            i += 1
+        return segments
+    
+    def analyze_text(self, df, df_path, threshold_wpm, video_path, segments_path):
         try:
             print('Analyzing text...')
             df['wpm'] = df.apply(self.calculate_wpm, threshold_wpm=threshold_wpm, axis=1)
@@ -28,6 +56,13 @@ class AnalyzeText:
             # df['slow_ratio'] = df['wpm'].apply(lambda wpm: min(round((wpm/threshold_wpm), 2), 2) if wpm > threshold_wpm else 1)
             df['time+slow'] = df.apply(lambda row : self.combine_tuples(row), axis=1)
             df.to_csv(df_path, index=False)
+
+            segments = df['time+slow'].tolist()
+            segments = self.fill_segments(video_path, segments)
+            segments_dict = [dict(zip(("start", "end", "slow_ratio"), x)) for x in segments]
+            with open(segments_path, "w") as outfile: 
+                json.dump(segments_dict, outfile)
+            
             print('Successfully analyzed text, Dataframe file created')
             return 0
         except Exception as e:
@@ -55,7 +90,7 @@ class AnalyzeText:
                     if i == end_index:
                         word_info['start'] = words[i-1]['end']
                         word_info['end'] = words[i-1]['end'] + 3
-                    #if next word is also an abonormal word
+                    # if next word is also an abonormal word
                     # keep searching for the next word and eventually find one that is a normal word
                     # Divide the timestamp between the two normal words to find a average timestamp and allocate them to the abnormal cases 
                     elif 'start' not in words[i+1]:
@@ -70,7 +105,7 @@ class AnalyzeText:
                         end_time = prev_time + divided_interval
                         word_info['start'] = prev_time
                         word_info['end'] = end_time
-                    #if abnormal word is the first word, give it a artificial 3 seconds of timeframe
+                    #if abnormal word is the first word, give it a arbitrary 3 seconds of timeframe
                     elif i == 0:
                         word_info['start'] = max(0, words[i+1]['start'] - 3)
                         word_info['end'] = words[i+1]['start']
@@ -117,6 +152,9 @@ class AnalyzeText:
             transcript_path = args['transcript_path']
             threshold_wpm = args['threshold_wpm']
             split_max = args['split_max']
+            video_path = args['video_path']
+            segments_path = args['segments_path']
+
             if os.path.exists(transcript_path):
                 with open(transcript_path, 'r') as f:
                     transcript = json.load(f)
@@ -125,7 +163,7 @@ class AnalyzeText:
                 if status != 0:
                     return -1
 
-                status = self.analyze_text(df, df_path, threshold_wpm)
+                status = self.analyze_text(df, df_path, threshold_wpm, video_path, segments_path)
                 if status != 0:
                     return -1
                 
