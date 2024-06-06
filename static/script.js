@@ -11,12 +11,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Find the current segment based on the current time
     const currentSegment = segments.find(
-      (segment) => currentTime >= segment[0] && currentTime < segment[1]
+      (segment) =>
+        currentTime >= segment["start"] && currentTime < segment["end"]
     );
 
     if (currentSegment) {
       // Set the playback rate to the segment's speed
-      video.playbackRate = currentSegment[2];
+      video.playbackRate = currentSegment["slow_ratio"];
     } else {
       // Set the playback rate to normal if not in any segment
       video.playbackRate = 1.0;

@@ -22,20 +22,19 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-
-def my_function(param1, param2):
-    return f"Function executed with parameters: {param1}, {param2}"
-
-def execute_pipeline():
-    video_number = '2'
-    save_path = f'outputs/output_{video_number}/'
-    # save_path = f'outputs/'
+def execute_pipeline(filename):
+    
+    # video_number = '2'
+    
+    save_path = f'outputs/output_{os.path.splitext(filename)[0]}/'
+    # save_path = f'outputs/output_{video_number}/'
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
     args = {
-        "video_path" : f"video_{video_number}.mp4",
+        "video_path" : os.path.join(app.config['UPLOAD_FOLDER'], filename),
+        # "video_path" : f"video_{video_number}.mp4",
         "audio_path" : os.path.join(save_path, "audio.wav"),
         "df_path" : os.path.join(save_path, "text.csv"),
         "transcript_path" : os.path.join(save_path, "transcript.json"),
@@ -43,27 +42,29 @@ def execute_pipeline():
         "segments_path" : os.path.join(save_path, "segments.json"),
         "split_max" : 15,
         "threshold_wpm" : 170,
-        "run_extract_audio" : False,
-        "run_audio_to_text": False,  
-        "run_analyze_text": True,   
-        "run_process_video": False,
-        "run_video_player" : False 
+        "run_extract_audio" : True,
+        "run_audio_to_text": True,  
+        "run_analyze_text": True   
+        # "run_process_video": False,
+        # "run_video_player" : False 
     }
-    # start_time = time.time()
-    
+    start_time = time.time()
     pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), LaunchVideo()])
     status = pipeline.run(args)
     if status != 0:
+        print('Exiting program...')
         exit()
     with open(args['segments_path']) as json_file:
         segments = json.load(json_file)
 
     print('All process finished')
+    end_time = time.time()
+    runtime = end_time - start_time
+    print("Runtime:", runtime, "seconds")
+
     return segments
 
-    # end_time = time.time()
-    # runtime = end_time - start_time
-    # print("Runtime:", runtime, "seconds")
+    
 
 @app.route('/')
 def index():
@@ -106,7 +107,7 @@ def uploaded_file(filename):
 #     return render_template('show_video.html', filename=filename, segments=segments)
 @app.route('/show_video/<filename>')
 def show_video(filename):
-    segments = execute_pipeline()
+    segments = execute_pipeline(filename)
     return render_template('show_video.html', filename=filename, segments=segments)
 
 if __name__ == "__main__":
