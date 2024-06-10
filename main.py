@@ -42,14 +42,15 @@ def execute_pipeline(filename):
         "segments_path" : os.path.join(save_path, "segments.json"),
         "split_max" : 15,
         "threshold_wpm" : 170,
-        "run_extract_audio" : True,
-        "run_audio_to_text": True,  
-        "run_analyze_text": True   
+        "run_extract_audio" : False,
+        "run_audio_to_text": False,  
+        "run_analyze_text": False   
         # "run_process_video": False,
         # "run_video_player" : False 
     }
     start_time = time.time()
-    pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), LaunchVideo()])
+    # pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), LaunchVideo()])
+    pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText()])
     status = pipeline.run(args)
     if status != 0:
         print('Exiting program...')
@@ -68,20 +69,7 @@ def execute_pipeline(filename):
 
 @app.route('/')
 def index():
-    return render_template('test.html')
-
-
-# @app.route('/output')
-# def output_page():
-#     # return render_template('index.html', segments=segments, video_filename=video_path)
-#     return render_template('index.html')
-
-# @app.route('/run-function', methods=['POST'])
-# def run_function():
-#     param1 = request.form['param1']
-#     param2 = request.form['param2']
-#     result = my_function(param1, param2)
-#     return render_template('result.html', result=result)
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -92,8 +80,9 @@ def upload_file():
         return redirect(request.url)  # Redirect if no file is selected
     if file and allowed_file(file.filename):
         filename = file.filename
+        segment_len = request.form.get('sliderValue')
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return redirect(url_for('show_video', filename=filename))
+        return redirect(url_for('show_video', filename=filename, segment_len=segment_len))
     return redirect(request.url)
 
 @app.route('/uploads/<filename>')
@@ -105,8 +94,10 @@ def uploaded_file(filename):
 #     filename = request.args.get('filename')
 #     segments = execute_pipeline()
 #     return render_template('show_video.html', filename=filename, segments=segments)
-@app.route('/show_video/<filename>')
-def show_video(filename):
+@app.route('/show_video')
+def show_video():
+    filename = request.args.get('filename')
+    segment_len = request.args.get('segment_len')  # if needed
     segments = execute_pipeline(filename)
     return render_template('show_video.html', filename=filename, segments=segments)
 
