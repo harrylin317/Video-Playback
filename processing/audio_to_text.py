@@ -11,7 +11,7 @@ class AudioToText:
             print('Extracting text from audio...')
             device = "cuda" 
             audio_file = audio_path
-            batch_size = 4 # reduce if low on GPU mem
+            batch_size = 8 # reduce if low on GPU mem
             compute_type = "float16" # change to "int8" if low on GPU mem (may reduce accuracy)
 
             # 1. Transcribe with original whisper (batched)

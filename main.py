@@ -22,10 +22,9 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-def execute_pipeline(filename):
-    
+def execute_pipeline(filename, segment_len, max_wpm):
     # video_number = '2'
-    
+
     save_path = f'outputs/output_{os.path.splitext(filename)[0]}/'
     # save_path = f'outputs/output_{video_number}/'
 
@@ -40,8 +39,8 @@ def execute_pipeline(filename):
         "transcript_path" : os.path.join(save_path, "transcript.json"),
         "output_path" : os.path.join(save_path, "output.mp4"),
         "segments_path" : os.path.join(save_path, "segments.json"),
-        "split_max" : 15,
-        "threshold_wpm" : 170,
+        "split_max" : segment_len,
+        "threshold_wpm" : max_wpm,
         "run_extract_audio" : False,
         "run_audio_to_text": False,  
         "run_analyze_text": False   
@@ -80,26 +79,25 @@ def upload_file():
         return redirect(request.url)  # Redirect if no file is selected
     if file and allowed_file(file.filename):
         filename = file.filename
-        segment_len = request.form.get('segmentValue')
+        segment_len = request.form.get('hiddenSegmentValue')
+        max_wpm = request.form.get('hiddenWpmValue')
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return redirect(url_for('show_video', filename=filename, segment_len=segment_len))
+        return redirect(url_for('show_video', filename=filename, segment_len=segment_len, max_wpm=max_wpm))
     return redirect(request.url)
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# @app.route('/show_video')
-# def show_video():
-#     filename = request.args.get('filename')
-#     segments = execute_pipeline()
-#     return render_template('show_video.html', filename=filename, segments=segments)
+
 @app.route('/show_video')
 def show_video():
     filename = request.args.get('filename')
-    segment_len = request.args.get('segment_len')
-    segments = execute_pipeline(filename)
-    return render_template('show_video.html', filename=filename, segments=segments)
+    segment_len = int(request.args.get('segment_len'))
+    max_wpm = int(request.args.get('max_wpm'))
+    segments = execute_pipeline(filename, segment_len, max_wpm)
+    # return render_template('show_video.html', filename=filename, segments=segments)
+    return render_template('play_video.html', filename=filename, segments=segments)
 
 if __name__ == "__main__":
     app.run(debug=True)
