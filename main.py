@@ -80,7 +80,7 @@ def upload_file():
         return redirect(request.url)  # Redirect if no file is selected
     if file and allowed_file(file.filename):
         filename = file.filename
-        segment_len = request.form.get('sliderValue')
+        segment_len = request.form.get('segmentValue')
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return redirect(url_for('show_video', filename=filename, segment_len=segment_len))
     return redirect(request.url)
@@ -97,7 +97,7 @@ def uploaded_file(filename):
 @app.route('/show_video')
 def show_video():
     filename = request.args.get('filename')
-    segment_len = request.args.get('segment_len')  # if needed
+    segment_len = request.args.get('segment_len')
     segments = execute_pipeline(filename)
     return render_template('show_video.html', filename=filename, segments=segments)
 
