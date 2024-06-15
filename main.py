@@ -43,7 +43,7 @@ def execute_pipeline(filename, segment_len, max_wpm):
         "threshold_wpm" : max_wpm,
         "run_extract_audio" : False,
         "run_audio_to_text": False,  
-        "run_analyze_text": False   
+        "run_analyze_text": True   
         # "run_process_video": False,
         # "run_video_player" : False 
     }

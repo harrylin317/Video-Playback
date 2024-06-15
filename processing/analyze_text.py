@@ -39,8 +39,12 @@ class AnalyzeText:
         # Add the segments in between the segments
         i = 0
         while i < len(segments) - 1:
+            # if the slow_ratio is consecutively the same, combine them
+            if segments[i+1][2] == segments[i][2]:
+                segments[i] = (segments[i][0], segments[i+1][1], segments[i][2])
+                segments.pop(i+1)
             # If time between segments is small, stretch the previous end to match the next timestamp's start
-            if segments[i+1][0] - segments[i][1] <= 0.5:
+            elif segments[i+1][0] - segments[i][1] < 2:
                 segments[i] = (segments[i][0], segments[i+1][0], segments[i][2])
             else:
                 segments.insert(i+1, (segments[i][1], segments[i+1][0], 1))
