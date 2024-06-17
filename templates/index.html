@@ -10,15 +10,20 @@
 
     <h1>Upload Your Video</h1>
     <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
-        <input type="range" value='15' name="segmentInput" min="10" max="30" data-text-value="segmentTextValue" data-hidden-value="hiddenSegmentValue" onchange="updateSliderInput(this);">
-        <p>Words per segment: <span id="segmentTextValue">15</span></p>
-        <input type="hidden" id="hiddenSegmentValue" name="hiddenSegmentValue" value="15">
+
+        <input type="range" value='20' name="segmentInput" min="10" max="30" data-text-value="segmentTextValue" data-hidden-value="hiddenSegmentValue" onchange="updateSliderInput(this);">
+        <p>Words per segment: <span id="segmentTextValue">20</span></p>
+        <input type="hidden" id="hiddenSegmentValue" name="hiddenSegmentValue" value="20">
 
 
         
-        <input type="range" value='170' name="wmpInput" min="100" max="200" data-text-value="wmpTextValue" data-hidden-value="hiddenWpmValue" onchange="updateSliderInput(this);">
-        <p>Max words per minute: <span id="wmpTextValue">170</span></p>
+        <input type="range" value='170' name="wpmInput" min="100" max="200" data-text-value="wpmTextValue" data-hidden-value="hiddenWpmValue" onchange="updateSliderInput(this);">
+        <p>Max words per minute: <span id="wpmTextValue">170</span></p>
         <input type="hidden" id="hiddenWpmValue" name="hiddenWpmValue" value="170">
+
+        <input type="range" value='240' name="spmInput" min="100" max="300" data-text-value="spmTextValue" data-hidden-value="hiddenSpmValue" onchange="updateSliderInput(this);">
+        <p>Max words per minute: <span id="spmTextValue">240</span></p>
+        <input type="hidden" id="hiddenSpmValue" name="hiddenSpmValue" value="240">
 
         <input type="file" name="file" accept="video/*" required>
         <button type="submit">Upload</button>

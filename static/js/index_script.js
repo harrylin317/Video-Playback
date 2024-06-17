@@ -22,8 +22,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize the display for segment value using its current value
   updateSliderInput(segmentSlider);
 
-  // Get the first element with the name "wmpInput"
-  var wpmSlider = document.getElementsByName("wmpInput")[0];
-  // Initialize the display for wpm value using its current value
+  var wpmSlider = document.getElementsByName("wpmInput")[0];
   updateSliderInput(wpmSlider);
+
+  var spmSlider = document.getElementsByName("spmInput")[0];
+  updateSliderInput(spmSlider);
 });

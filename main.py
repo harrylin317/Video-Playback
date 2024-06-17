@@ -22,7 +22,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-def execute_pipeline(filename, segment_len, max_wpm):
+def execute_pipeline(filename, segment_len, max_wpm, max_spm):
     # video_number = '2'
 
     save_path = f'outputs/output_{os.path.splitext(filename)[0]}/'
@@ -41,6 +41,7 @@ def execute_pipeline(filename, segment_len, max_wpm):
         "segments_path" : os.path.join(save_path, "segments.json"),
         "split_max" : segment_len,
         "threshold_wpm" : max_wpm,
+        "threshold_spm" : max_spm,
         "run_extract_audio" : False,
         "run_audio_to_text": False,  
         "run_analyze_text": True   
@@ -81,8 +82,9 @@ def upload_file():
         filename = file.filename
         segment_len = request.form.get('hiddenSegmentValue')
         max_wpm = request.form.get('hiddenWpmValue')
+        max_spm = request.form.get('hiddenSpmValue')
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return redirect(url_for('show_video', filename=filename, segment_len=segment_len, max_wpm=max_wpm))
+        return redirect(url_for('show_video', filename=filename, segment_len=segment_len, max_wpm=max_wpm, max_spm=max_spm))
     return redirect(request.url)
 
 @app.route('/uploads/<filename>')
@@ -95,13 +97,14 @@ def show_video():
     filename = request.args.get('filename')
     segment_len = int(request.args.get('segment_len'))
     max_wpm = int(request.args.get('max_wpm'))
-    segments = execute_pipeline(filename, segment_len, max_wpm)
+    max_spm = int(request.args.get('max_spm'))
+    segments = execute_pipeline(filename, segment_len, max_wpm, max_spm)
     # return render_template('show_video.html', filename=filename, segments=segments)
     return render_template('play_video.html', filename=filename, segments=segments)
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    # execute_pipeline("video_1.mp4", 20, 150)
+    # app.run(debug=True)
+    execute_pipeline("video_2.mp4", 20, 170, 240)
 
 
 

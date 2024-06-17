@@ -5,16 +5,10 @@ import os
 import traceback
 import moviepy.editor as mp
 import re
+import syllables
 
 
 class AnalyzeText:
-    @staticmethod
-    def count_syllables(word):
-        # Simple heuristic to count syllables in a word
-        word = word.lower()
-        syllable_count = len(re.findall(r'[aeiouy]+', word))
-        return syllable_count
-
     @staticmethod
     def calculate_wpm(row, threshold_wpm):
         num_words = len(row['text'].split())
@@ -25,21 +19,28 @@ class AnalyzeText:
         wpm = num_words / duration_in_minute
         return round(wpm, 2)
     
-
-    @staticmethod
-    def count_syllables(word):
-        # Simple heuristic to count syllables in a word
-        word = word.lower()
-        syllable_count = len(re.findall(r'[aeiouy]+', word))
-        return syllable_count
     
     @staticmethod
-    def calculate_spm(row):
-        num_words = len(row['text'].split())
-        duration_in_seconds = (row['timestamp'][1] - row['timestamp'][0])
-        wps = num_words / duration_in_seconds
-        return round(wps, 2)
-    
+    def calculate_spm(row, threshold_spm):
+        word_list = row['text'].split()
+        duration_in_minutes = (row['timestamp'][1] - row['timestamp'][0]) / 60
+        # prevent division by 0
+        if duration_in_minutes <= 0:
+            return threshold_spm
+        total_syllables = 0
+        for word in word_list:
+            total_syllables += syllables.estimate(word)       
+            
+        spm = total_syllables / duration_in_minutes
+        return round(spm, 2)
+    @staticmethod
+    def calculate_slow_ratio(row, threshold_wpm, threshold_spm):
+        wpm = row['wpm']
+        spm = row['spm']
+        wpm_ratio = threshold_wpm / wpm if wpm > threshold_wpm else 1
+        spm_ratio = threshold_spm / spm if spm > threshold_spm else 1
+        average_ratio = round((wpm_ratio + spm_ratio) / 2, 2)
+        return average_ratio
     
         
     @staticmethod
@@ -81,12 +82,14 @@ class AnalyzeText:
         df = pd.concat([df, new_row], ignore_index=True)
         return df
 
-    def analyze_text(self, df, df_path, threshold_wpm, video_path, segments_path):
+    def analyze_text(self, df, df_path, threshold_wpm, threshold_spm, video_path, segments_path):
         try:
             print('Analyzing text...')
             df['wpm'] = df.apply(self.calculate_wpm, threshold_wpm=threshold_wpm, axis=1)
+            df['spm'] = df.apply(self.calculate_spm, threshold_spm=threshold_spm, axis=1)
             # calculate slow ratio. Equals 1 if not need slowing
-            df['slow_ratio'] = df['wpm'].apply(lambda wpm: round((threshold_wpm/wpm), 2) if wpm > threshold_wpm else 1)
+            df['slow_ratio'] = df.apply(self.calculate_slow_ratio, threshold_wpm=threshold_wpm, threshold_spm=threshold_spm, axis=1)
+            # df['slow_ratio'] = df['wpm'].apply(lambda wpm: round((threshold_wpm/wpm), 2) if wpm > threshold_wpm else 1)
             # df['slow_ratio'] = df['wpm'].apply(lambda wpm: min(round((wpm/threshold_wpm), 2), 2) if wpm > threshold_wpm else 1)
             df['time+slow'] = df.apply(lambda row : self.combine_tuples(row), axis=1)
             df.to_csv(df_path, index=False)
@@ -270,6 +273,7 @@ class AnalyzeText:
             df_path = args['df_path']
             transcript_path = args['transcript_path']
             threshold_wpm = args['threshold_wpm']
+            threshold_spm = args['threshold_spm']
             split_max = args['split_max']
             video_path = args['video_path']
             segments_path = args['segments_path']
@@ -283,7 +287,7 @@ class AnalyzeText:
                 if status != 0:
                     return -1
 
-                status = self.analyze_text(df, df_path, threshold_wpm, video_path, segments_path)
+                status = self.analyze_text(df, df_path, threshold_wpm, threshold_spm, video_path, segments_path)
                 if status != 0:
                     return -1
                 
