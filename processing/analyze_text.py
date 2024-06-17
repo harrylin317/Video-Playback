@@ -4,20 +4,44 @@ import json
 import os
 import traceback
 import moviepy.editor as mp
+import re
 
 
 class AnalyzeText:
+    @staticmethod
+    def count_syllables(word):
+        # Simple heuristic to count syllables in a word
+        word = word.lower()
+        syllable_count = len(re.findall(r'[aeiouy]+', word))
+        return syllable_count
+
     @staticmethod
     def calculate_wpm(row, threshold_wpm):
         num_words = len(row['text'].split())
         duration_in_minute = (row['timestamp'][1] - row['timestamp'][0]) / 60
         # prevent division by 0
-        if duration_in_minute == 0:
+        if duration_in_minute <= 0:
             return threshold_wpm
-        duration_in_minute = max(duration_in_minute, 0.001)
         wpm = num_words / duration_in_minute
         return round(wpm, 2)
     
+
+    @staticmethod
+    def count_syllables(word):
+        # Simple heuristic to count syllables in a word
+        word = word.lower()
+        syllable_count = len(re.findall(r'[aeiouy]+', word))
+        return syllable_count
+    
+    @staticmethod
+    def calculate_spm(row):
+        num_words = len(row['text'].split())
+        duration_in_seconds = (row['timestamp'][1] - row['timestamp'][0])
+        wps = num_words / duration_in_seconds
+        return round(wps, 2)
+    
+    
+        
     @staticmethod
     def combine_tuples(row):
         return (row['timestamp'][0], row['timestamp'][1], row['slow_ratio'])
@@ -51,6 +75,12 @@ class AnalyzeText:
             i += 1
         return segments
     
+    @staticmethod
+    def add_row(df, timestamp, sentence, word_timestamp_list):
+        new_row = pd.DataFrame({'timestamp': [timestamp], 'text': [sentence], 'word_timestamp_list': [word_timestamp_list]})
+        df = pd.concat([df, new_row], ignore_index=True)
+        return df
+
     def analyze_text(self, df, df_path, threshold_wpm, video_path, segments_path):
         try:
             print('Analyzing text...')
@@ -74,6 +104,92 @@ class AnalyzeText:
             traceback.print_exc()
             return -1
     
+    def combine_words_new(self, transcript, split_max):
+        try:
+            print('Combining words from transcript...')
+            words = transcript
+            df = pd.DataFrame(columns=['timestamp', 'text', 'word_timestamp_list'])
+            end_index = len(words) - 1
+            word_list = []
+            word_timestamp_list = []
+            start_time = None
+            word_count = 0
+            split_index = None
+            chars_to_check = {',', '?', '.'}
+
+            for i, word_info in enumerate(words):
+                # handle the case for numbers e.g. '1980' with no start or end timestamps                
+                if 'start' not in word_info:
+                    if i == end_index:
+                        word_info['start'] = words[i-1]['end']
+                        word_info['end'] = words[i-1]['end'] + 3
+                    # if next word is also an abonormal word
+                    # keep searching for the next word and eventually find one that is a normal word
+                    # Divide the timestamp between the two normal words to find a average timestamp and allocate them to the abnormal cases 
+                    elif 'start' not in words[i+1]:
+                        next_idx = i + 1
+                        divide = 1
+                        while 'start' not in words[next_idx]:
+                            next_idx += 1
+                            divide += 1
+                        next_time = words[next_idx]['start']
+                        prev_time = words[i-1]['end']
+                        divided_interval = round((next_time - prev_time) / divide, 3)
+                        end_time = prev_time + divided_interval
+                        word_info['start'] = prev_time
+                        word_info['end'] = end_time
+                    #if abnormal word is the first word, give it a arbitrary 3 seconds of timeframe
+                    elif i == 0:
+                        word_info['start'] = max(0, words[i+1]['start'] - 3)
+                        word_info['end'] = words[i+1]['start']
+                    else:
+                        word_info['start'] = words[i-1]['end']
+                        word_info['end'] = words[i+1]['start']
+
+                if start_time == None:
+                    start_time = word_info['start']
+
+                word = word_info['word']
+                word_list.append(word)
+                word_timestamp_list.append(word_info)
+                word_count += 1
+                if any(char in chars_to_check for char in word):
+                # if '.' in word:
+                    split_index = word_count - 1
+                    
+
+                if word_count >= split_max and split_index != None:
+                    tmp_word_list = word_list[:split_index + 1]
+                    word_list = word_list[split_index + 1:]
+                    word_count = len(word_list)
+                    sentence = ' '.join(tmp_word_list)
+                    # print('hey', split_index)
+                    # print(word_list)
+                    # print(len(word_timestamp_list))
+
+                    end_time = word_timestamp_list[split_index]['end']
+
+                    tmp_word_timestamp_list = word_timestamp_list[:split_index + 1]
+                    word_timestamp_list = word_timestamp_list[split_index + 1:]
+                    
+
+                    df = self.add_row(df, (start_time, end_time), sentence, tmp_word_timestamp_list)
+
+                    split_index = None
+                    if word_count != 0:
+                        start_time = word_timestamp_list[0]['start']
+                    else:
+                        start_time = None
+                elif i == end_index:
+                    sentence = ' '.join(word_list)                    
+                    end_time = word_timestamp_list[word_count - 1]['end']
+                    df = self.add_row(df, (start_time, end_time), sentence, word_timestamp_list)
+            return df, 0
+        except Exception as e:
+            print(f"Error occurred when combining words: {e}")
+            traceback.print_exc()
+            return None, -1
+
     def combine_words(self, transcript, split_max):
         try:
             print('Combining words from transcript...')
@@ -88,8 +204,7 @@ class AnalyzeText:
             end_index = len(words) - 1
             for i, word_info in enumerate(words):
 
-                # handle the case for numbers e.g. '1980' with no start or end timestamps
-                
+                # handle the case for numbers e.g. '1980' with no start or end timestamps                
                 if 'start' not in word_info:
                     if i == end_index:
                         word_info['start'] = words[i-1]['end']
@@ -163,7 +278,8 @@ class AnalyzeText:
                 with open(transcript_path, 'r') as f:
                     transcript = json.load(f)
 
-                df, status = self.combine_words(transcript, split_max)
+                # df, status = self.combine_words(transcript, split_max)
+                df, status = self.combine_words_new(transcript, split_max)
                 if status != 0:
                     return -1
 
