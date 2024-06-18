@@ -2,12 +2,9 @@ var video = videojs("my-video");
 
 var segments = JSON.parse(document.getElementById("segments-data").textContent);
 
-// var markers = [
-//   { time: 50, label: "Hello" },
-//   { time: 150, label: "Hello asd a asd asdsad" },
-//   { time: 200, label: "Hello" },
-//   { time: 220, label: "Hello" },
-// ];
+var toggle = document.getElementById("toggleSlow");
+
+video.on("timeupdate", adjustVideoPlayback);
 
 video.on("loadedmetadata", function () {
   var total = video.duration();
@@ -39,7 +36,17 @@ video.on("loadedmetadata", function () {
   }
 });
 
-video.on("timeupdate", function () {
+function toggleSlow(checkbox) {
+  toggleState = checkbox.checked;
+
+  if (toggleState) {
+    video.on("timeupdate", adjustVideoPlayback);
+  } else {
+    video.off("timeupdate", adjustVideoPlayback);
+    video.playbackRate(1);
+  }
+}
+function adjustVideoPlayback() {
   var currentTime = video.currentTime();
   var currentSegment = segments.find(
     (segment) => currentTime >= segment.start && currentTime < segment.end
@@ -48,4 +55,4 @@ video.on("timeupdate", function () {
   if (currentSegment) {
     video.playbackRate(currentSegment.slow_ratio);
   }
-});
+}

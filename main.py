@@ -103,8 +103,8 @@ def show_video():
     return render_template('play_video.html', filename=filename, segments=segments)
 
 if __name__ == "__main__":
-    # app.run(debug=True)
-    execute_pipeline("video_2.mp4", 20, 170, 240)
+    app.run(debug=True)
+    # execute_pipeline("video_2.mp4", 20, 170, 240)
 
 
 

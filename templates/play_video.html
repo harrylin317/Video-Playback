@@ -28,10 +28,14 @@
         >
       </p>
     </video>
+    
     <script type="application/json" id="segments-data">{{ segments | tojson | safe }}</script>
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-    <script src="{{ url_for('static', filename='js/chapter_marker.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/video_script.js') }}"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+    <input type="checkbox" id="toggleSlow" checked onchange="toggleSlow(this);" >
+    <label for="toggleSlow">Toggle Slow</label>
     <p>Uploaded video file name: {{ filename }}</p>
     <a href="{{ url_for('index') }}">Go back to the main page</a>
   </body>

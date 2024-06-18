@@ -11,6 +11,9 @@
         <source src="{{ url_for('uploaded_file', filename=filename) }}" type="video/mp4">
         Your browser does not support the video tag.
     </video>
+    <label class="switch">
+        <input type="checkbox" id="myToggle">
+        <span>Toggle automatic slow</span>
     <script type="application/json" id="segments-data">{{ segments | tojson | safe }}</script>
     <p>Uploaded video file name: {{ filename }}</p>
     <a href="{{ url_for('index') }}">Go back to the main page</a>
