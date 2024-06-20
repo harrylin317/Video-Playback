@@ -36,6 +36,7 @@ def execute_pipeline(filename, segment_len, max_wpm, max_spm):
         # "video_path" : f"video_{video_number}.mp4",
         "audio_path" : os.path.join(save_path, "audio.wav"),
         "df_path" : os.path.join(save_path, "text.csv"),
+        "sub_path" : os.path.join(save_path, "sub.csv"),
         "transcript_path" : os.path.join(save_path, "transcript.json"),
         "output_path" : os.path.join(save_path, "output.mp4"),
         "segments_path" : os.path.join(save_path, "segments.json"),
@@ -45,8 +46,6 @@ def execute_pipeline(filename, segment_len, max_wpm, max_spm):
         "run_extract_audio" : False,
         "run_audio_to_text": False,  
         "run_analyze_text": True   
-        # "run_process_video": False,
-        # "run_video_player" : False 
     }
     start_time = time.time()
     # pipeline = Pipeline([ExtractAudio(), AudioToText(), AnalyzeText(), LaunchVideo()])
@@ -103,8 +102,8 @@ def show_video():
     return render_template('play_video.html', filename=filename, segments=segments)
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    # execute_pipeline("video_2.mp4", 20, 170, 240)
+    # app.run(debug=True)
+    execute_pipeline("video_1.mp4", 20, 170, 240)
 
 
 

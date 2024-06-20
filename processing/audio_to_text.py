@@ -15,7 +15,7 @@ class AudioToText:
             compute_type = "float16" # change to "int8" if low on GPU mem (may reduce accuracy)
 
             # 1. Transcribe with original whisper (batched)
-            model = whisperx.load_model("large-v2", device, compute_type=compute_type, language='en')
+            model = whisperx.load_model("large-v3", device, compute_type=compute_type, language='en')
 
             audio = whisperx.load_audio(audio_file)
             result = model.transcribe(audio, batch_size=batch_size)
