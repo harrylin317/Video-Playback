@@ -111,9 +111,51 @@ class AnalyzeText:
         return word_info
 
     @staticmethod
-    def create_webvtt(segments, max_split=40):
-        webvtt_content = "WEBVTT\n\n"
-        return webvtt_content
+    def convert_to_webvtt_timestamp(seconds):
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        milliseconds = int((seconds - int(seconds)) * 1000)
+
+        return f"{hours:02}:{minutes:02}:{secs:02}.{milliseconds:03}"
+    
+    @staticmethod
+    def convert_time_span_to_webvtt(timestamp):
+        start_time = AnalyzeText.convert_to_webvtt_timestamp(timestamp[0])
+        end_time = AnalyzeText.convert_to_webvtt_timestamp(timestamp[1])
+        return f"{start_time} --> {end_time}"
+
+    def create_webvtt(self, df, webvtt_path):
+        try:
+            print('Generating subtitles...')
+            timestamps = df['timestamp'].tolist()
+            sentences = df['text'].tolist()
+            total_len = len(sentences)
+
+            line_counter = 0
+            webvtt_content = "WEBVTT\n\n"
+            for i, (timestamp, sentence) in enumerate(zip(timestamps, sentences)):
+                line_counter += 1
+                if line_counter == 1:
+                    webvtt_content += timestamp + '\n'
+                    webvtt_content += sentence + '\n'
+                elif line_counter == 2:
+                    webvtt_content += sentence + '\n'
+                    line_counter = 0
+                elif line_counter != 2 and i == total_len - 1:
+                    print('hye')
+                
+
+
+            
+
+            with open(webvtt_path, 'w') as file:
+                file.write(webvtt_content)
+            return 0
+        except Exception as e:
+            print(f"Error occurred when generating subtitles: {e}")
+            traceback.print_exc()
+            return -1
     
     def analyze_text(self, df, df_path, threshold_wpm, threshold_spm, video_path, segments_path):
         try:
@@ -149,12 +191,13 @@ class AnalyzeText:
             word_list = []
             word_timestamp_list = []
             start_time = None
+            split_index = None
+            second_line = False
             word_count = 0
             char_count = 0
-            second_line = False
-            split_index = None
             max_char = 40
             chars_to_check = {',', '?', '.'}
+        
 
             for i, word_info in enumerate(words):
                 # handle the case for numbers e.g. '1980' with no start or end timestamps                
@@ -165,48 +208,35 @@ class AnalyzeText:
 
                 # end sentence if new word char exceeds maximum char count
                 if len(word) + char_count > max_char:
-                    # if current line is the second line of subtitle, and if at least one punctuation has been found, 
-                    # then cut the sentence and continue one the second segment 
-                    if split_index != None and second_line:                        
-                        tmp_word_list = word_list[:split_index + 1]
-                        word_list = word_list[split_index + 1:]
-                        word_count = len(word_list)
-                        sentence = ' '.join(tmp_word_list)
-
-                        end_time = word_timestamp_list[split_index]['end']
-                        tmp_word_timestamp_list = word_timestamp_list[:split_index + 1]
-                        word_timestamp_list = word_timestamp_list[split_index + 1:]       
-
-                        split_index = None
-                        char_count = sum(len(w) for w in word_list)
-                        second_line = False
-
-
-                    # if adding the current word exceeds the max, we end the sentence and start new one with the word
-                    # Do this everytime when its the first line of the subtitle                    
-                    else:
-                        tmp_word_list = word_list
-                        word_list = []                    
-                        sentence = ' '.join(tmp_word_list)
-
-                        end_time = word_timestamp_list[word_count - 1]['end']
-                        tmp_word_timestamp_list = word_timestamp_list
-                        word_timestamp_list = []
-                        
-                        word_count = 0
+                    # if not the second line of the subtitle, simply add a '/' to signify cut location, and reset character count                    
+                    if not second_line:
+                        word_list[-1] = word_list[-1] + '/'       
                         char_count = 0
                         split_index = None
                         second_line = True
-                      
-                    df = self.add_row(df, (start_time, end_time), sentence, tmp_word_timestamp_list)                 
-                    
-                    # if after the split, there is still remaining words, update the starting time
-                    # to that one in order to start a new sentence
-                    if word_count != 0:
-                        start_time = word_timestamp_list[0]['start']
+                    # if current line is the second line of subtitle, then cut the sentence and continue one the second segment 
+                    # (produces empty second segment if no split index is found)
                     else:
-                        start_time = None    
+                        if split_index == None:
+                            split_index = word_count - 1
+                                           
+                        cut_sentence = ' '.join(word_list[:split_index + 1])
+                        cut_timestamp_list = word_timestamp_list[:split_index + 1]     
+                        end_time = cut_timestamp_list[split_index]['end']
 
+                        df = self.add_row(df, (start_time, end_time), cut_sentence, cut_timestamp_list)
+
+                        word_list = word_list[split_index + 1:]
+                        word_timestamp_list = word_timestamp_list[split_index + 1:] 
+                        char_count = sum(len(w) for w in word_list)
+                        word_count = len(word_list)
+                        if word_count == 0:
+                            start_time = None
+                        else:
+                            start_time = word_timestamp_list[0]['start']                     
+                        split_index = None
+                        second_line = False
+                                       
                 # add word to current sentence (list of words)
                 word_list.append(word)
                 word_timestamp_list.append(word_info)
@@ -215,19 +245,20 @@ class AnalyzeText:
 
                 if start_time == None:
                     start_time = word_info['start']
+
                 # if the word includes any punctuations, keep track of it's location in the 
                 # current word list, update it if another one has been found
                 if any(char in chars_to_check for char in word):
                     split_index = word_count - 1
                     
-                if i == end_index and word_count != 0:
+                if i == end_index:
                     sentence = ' '.join(word_list)                    
-                    end_time = word_timestamp_list[word_count - 1]['end']
+                    end_time = word_timestamp_list[-1]['end']
                     df = self.add_row(df, (start_time, end_time), sentence, word_timestamp_list)
 
+            df['timestamp'] = df['timestamp'].apply(self.convert_time_span_to_webvtt)
             df.to_csv(sub_path, index=False)
-            return 0
-
+            return df, 0
 
         except Exception as e:
             print(f"Error occurred when combining subtitles: {e}")
@@ -268,17 +299,16 @@ class AnalyzeText:
                     
                 # if the max word limit is reached or already reached, and if at least
                 # one punctuation has been found, then end the sentence and start a new one
-                if word_count >= max_words and split_index != None:
-                    tmp_word_list = word_list[:split_index + 1]
+                if word_count >= max_words and split_index != None:                    
+                    sentence = ' '.join(word_list[:split_index + 1])                
+                    end_time = word_timestamp_list[split_index]['end']
+
+                    df = self.add_row(df, (start_time, end_time), sentence, word_timestamp_list[:split_index + 1])
+
                     word_list = word_list[split_index + 1:]
                     word_count = len(word_list)
-                    sentence = ' '.join(tmp_word_list)
-        
-                    end_time = word_timestamp_list[split_index]['end']
-                    tmp_word_timestamp_list = word_timestamp_list[:split_index + 1]
                     word_timestamp_list = word_timestamp_list[split_index + 1:]                    
 
-                    df = self.add_row(df, (start_time, end_time), sentence, tmp_word_timestamp_list)
 
                     # fix this, split index might not need to be reset?
                     split_index = None
@@ -291,7 +321,7 @@ class AnalyzeText:
                         start_time = None
                 elif i == end_index:
                     sentence = ' '.join(word_list)                    
-                    end_time = word_timestamp_list[word_count - 1]['end']
+                    end_time = word_timestamp_list[-1]['end']
                     df = self.add_row(df, (start_time, end_time), sentence, word_timestamp_list)
             return df, 0
         except Exception as e:
@@ -303,6 +333,7 @@ class AnalyzeText:
         if args['run_analyze_text']:
             df_path = args['df_path']
             sub_path = args['sub_path']
+            webvtt_path = args['webvtt_path']
             transcript_path = args['transcript_path']
             threshold_wpm = args['threshold_wpm']
             threshold_spm = args['threshold_spm']
@@ -317,12 +348,16 @@ class AnalyzeText:
                 df, status = self.combine_words(transcript, max_words)
                 if status != 0:
                     return -1
-                
-                status = self.combine_subtitle(sub_path, transcript)
+            
+                status = self.analyze_text(df, df_path, threshold_wpm, threshold_spm, video_path, segments_path)
                 if status != 0:
                     return -1
 
-                status = self.analyze_text(df, df_path, threshold_wpm, threshold_spm, video_path, segments_path)
+                sub, status = self.combine_subtitle(sub_path, transcript)
+                if status != 0:
+                    return -1
+                
+                status = self.create_webvtt(sub, webvtt_path)
                 if status != 0:
                     return -1
                 

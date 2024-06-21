@@ -37,6 +37,7 @@ def execute_pipeline(filename, segment_len, max_wpm, max_spm):
         "audio_path" : os.path.join(save_path, "audio.wav"),
         "df_path" : os.path.join(save_path, "text.csv"),
         "sub_path" : os.path.join(save_path, "sub.csv"),
+        "webvtt_path" : os.path.join(save_path, "subtitles.vtt"),
         "transcript_path" : os.path.join(save_path, "transcript.json"),
         "output_path" : os.path.join(save_path, "output.mp4"),
         "segments_path" : os.path.join(save_path, "segments.json"),
