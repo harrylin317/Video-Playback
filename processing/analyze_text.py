@@ -135,20 +135,14 @@ class AnalyzeText:
             line_counter = 0
             webvtt_content = "WEBVTT\n\n"
             for i, (timestamp, sentence) in enumerate(zip(timestamps, sentences)):
-                line_counter += 1
-                if line_counter == 1:
-                    webvtt_content += timestamp + '\n'
-                    webvtt_content += sentence + '\n'
-                elif line_counter == 2:
-                    webvtt_content += sentence + '\n'
-                    line_counter = 0
-                elif line_counter != 2 and i == total_len - 1:
-                    print('hye')
-                
+                webvtt_content += timestamp + '\n'
 
-
-            
-
+                lines = sentence.split('/ ')
+                if len(lines) == 2:
+                    webvtt_content += lines[0] + '\n' + lines[1] + '\n\n'
+                else: 
+                    webvtt_content += lines[0] + '\n\n'                            
+                           
             with open(webvtt_path, 'w') as file:
                 file.write(webvtt_content)
             return 0
