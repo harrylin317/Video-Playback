@@ -19,6 +19,7 @@
       data-setup="{}"
     >
       <source src="{{ url_for('uploaded_file', filename=filename) }}" type="video/mp4">
+      <track kind="captions" src="{{ url_for('output_files', filename='subtitles.vtt') }}" srclang="en" label="English" default>
       
       <p class="vjs-no-js">
         To view this video please enable JavaScript, and consider upgrading to a

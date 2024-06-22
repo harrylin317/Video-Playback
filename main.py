@@ -14,6 +14,7 @@ app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = 'video_uploads/'
 app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'avi', 'mov', 'wmv'}
+app.config['OUTPUT_FOLDER'] = 'outputs/'
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -25,22 +26,21 @@ def allowed_file(filename):
 def execute_pipeline(filename, segment_len, max_wpm, max_spm):
     # video_number = '2'
 
-    save_path = f'outputs/output_{os.path.splitext(filename)[0]}/'
-    # save_path = f'outputs/output_{video_number}/'
+    app.config['OUTPUT_FOLDER'] = os.path.join(app.config['OUTPUT_FOLDER'], f'output_{os.path.splitext(filename)[0]}/') 
+    # app.config['OUTPUT_FOLDER'] = f'outputs/output_{video_number}/'
 
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
+    if not os.path.exists(app.config['OUTPUT_FOLDER']):
+        os.makedirs(app.config['OUTPUT_FOLDER'])
 
     args = {
         "video_path" : os.path.join(app.config['UPLOAD_FOLDER'], filename),
         # "video_path" : f"video_{video_number}.mp4",
-        "audio_path" : os.path.join(save_path, "audio.wav"),
-        "df_path" : os.path.join(save_path, "text.csv"),
-        "sub_path" : os.path.join(save_path, "sub.csv"),
-        "webvtt_path" : os.path.join(save_path, "subtitles.vtt"),
-        "transcript_path" : os.path.join(save_path, "transcript.json"),
-        "output_path" : os.path.join(save_path, "output.mp4"),
-        "segments_path" : os.path.join(save_path, "segments.json"),
+        "audio_path" : os.path.join(app.config['OUTPUT_FOLDER'], "audio.wav"),
+        "df_path" : os.path.join(app.config['OUTPUT_FOLDER'], "text.csv"),
+        "sub_path" : os.path.join(app.config['OUTPUT_FOLDER'], "sub.csv"),
+        "webvtt_path" : os.path.join(app.config['OUTPUT_FOLDER'], "subtitles.vtt"),
+        "transcript_path" : os.path.join(app.config['OUTPUT_FOLDER'], "transcript.json"),
+        "segments_path" : os.path.join(app.config['OUTPUT_FOLDER'], "segments.json"),
         "split_max" : segment_len,
         "threshold_wpm" : max_wpm,
         "threshold_spm" : max_spm,
@@ -84,27 +84,29 @@ def upload_file():
         max_wpm = request.form.get('hiddenWpmValue')
         max_spm = request.form.get('hiddenSpmValue')
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return redirect(url_for('show_video', filename=filename, segment_len=segment_len, max_wpm=max_wpm, max_spm=max_spm))
+        return redirect(url_for('play_video', filename=filename, segment_len=segment_len, max_wpm=max_wpm, max_spm=max_spm))
     return redirect(request.url)
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/output_files/<filename>')
+def output_files(filename):
+    return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
 
-@app.route('/show_video')
-def show_video():
+@app.route('/play_video')
+def play_video():
     filename = request.args.get('filename')
     segment_len = int(request.args.get('segment_len'))
     max_wpm = int(request.args.get('max_wpm'))
     max_spm = int(request.args.get('max_spm'))
     segments = execute_pipeline(filename, segment_len, max_wpm, max_spm)
-    # return render_template('show_video.html', filename=filename, segments=segments)
     return render_template('play_video.html', filename=filename, segments=segments)
 
 if __name__ == "__main__":
-    # app.run(debug=True)
-    execute_pipeline("video_1.mp4", 20, 170, 240)
+    app.run(debug=True)
+    # execute_pipeline("video_1.mp4", 20, 170, 240)
 
 
 
