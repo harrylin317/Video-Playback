@@ -17,6 +17,7 @@ class AnalyzeText:
         if duration_in_minute <= 0:
             return threshold_wpm
         wpm = num_words / duration_in_minute
+        # adjusted_wpm = wpm / (1 + (3 / num_words))
         return round(wpm, 2)
        
     @staticmethod
@@ -184,7 +185,9 @@ class AnalyzeText:
             end_index = len(words) - 1
             word_list = []
             word_timestamp_list = []
-            start_time = None
+            sentence_start_time = None
+            sentence_end_time = None
+            prev_word_end_time = words[0]['end']
             split_index = None
             second_line = False
             word_count = 0
@@ -198,8 +201,8 @@ class AnalyzeText:
                 if 'start' not in word_info:
                     word_info = self.handle_abnormal_words(i, end_index, word_info, words)                
 
-                word = word_info['word']
-
+                word = word_info['word']               
+                
                 # end sentence if new word char exceeds maximum char count
                 if len(word) + char_count > max_char:
                     # if not the second line of the subtitle, simply add a '/' to signify cut location, and reset character count                    
@@ -216,29 +219,43 @@ class AnalyzeText:
                                            
                         cut_sentence = ' '.join(word_list[:split_index + 1])
                         cut_timestamp_list = word_timestamp_list[:split_index + 1]     
-                        end_time = cut_timestamp_list[split_index]['end']
-
-                        df = self.add_row(df, (start_time, end_time), cut_sentence, cut_timestamp_list)
+                        sentence_end_time = cut_timestamp_list[split_index]['end']
+                        df = self.add_row(df, (sentence_start_time, sentence_end_time), cut_sentence, cut_timestamp_list)
 
                         word_list = word_list[split_index + 1:]
                         word_timestamp_list = word_timestamp_list[split_index + 1:] 
                         char_count = sum(len(w) for w in word_list)
                         word_count = len(word_list)
                         if word_count == 0:
-                            start_time = None
+                            sentence_start_time = None
                         else:
-                            start_time = word_timestamp_list[0]['start']                     
+                            sentence_start_time = word_timestamp_list[0]['start']                     
                         split_index = None
                         second_line = False
-                                       
+
+                # cut sentence during pause that is more than one second long
+                elif word_info['start'] - prev_word_end_time >= 1:
+                    cut_sentence = ' '.join(word_list)                    
+                    sentence_end_time = word_timestamp_list[-1]['end']
+                    df = self.add_row(df, (sentence_start_time, sentence_end_time), cut_sentence, word_timestamp_list)
+
+                    word_list = []
+                    word_timestamp_list = []
+                    char_count = 0
+                    word_count = 0
+                    sentence_start_time = None
+                    split_index = None
+                    second_line = False
+
                 # add word to current sentence (list of words)
                 word_list.append(word)
                 word_timestamp_list.append(word_info)
                 word_count += 1
                 char_count += len(word)
+                prev_word_end_time = word_info['end']
 
-                if start_time == None:
-                    start_time = word_info['start']
+                if sentence_start_time == None:
+                    sentence_start_time = word_info['start']
 
                 # if the word includes any punctuations, keep track of it's location in the 
                 # current word list, update it if another one has been found
@@ -247,8 +264,8 @@ class AnalyzeText:
                     
                 if i == end_index:
                     sentence = ' '.join(word_list)                    
-                    end_time = word_timestamp_list[-1]['end']
-                    df = self.add_row(df, (start_time, end_time), sentence, word_timestamp_list)
+                    sentence_end_time = word_info['end']
+                    df = self.add_row(df, (sentence_start_time, sentence_end_time), sentence, word_timestamp_list)
 
             df['timestamp'] = df['timestamp'].apply(self.convert_time_span_to_webvtt)
             df.to_csv(sub_path, index=False)
@@ -267,7 +284,9 @@ class AnalyzeText:
             end_index = len(words) - 1
             word_list = []
             word_timestamp_list = []
-            start_time = None
+            sentence_start_time = None
+            sentence_end_time = None
+            prev_word_end_time = words[0]['end']
             word_count = 0
             split_index = None
             chars_to_check = {',', '?', '.'}
@@ -277,46 +296,62 @@ class AnalyzeText:
                 if 'start' not in word_info:
                     word_info = self.handle_abnormal_words(i, end_index, word_info, words)
 
-                if start_time == None:
-                    start_time = word_info['start']
+                
+                
+                # cut sentence during pause that is more than one second long
+                if word_info['start'] - prev_word_end_time >= 1:
+                    cut_sentence = ' '.join(word_list)                    
+                    sentence_end_time = word_timestamp_list[-1]['end']
+                    df = self.add_row(df, (sentence_start_time, sentence_end_time), cut_sentence, word_timestamp_list)
+
+                    word_list = []
+                    word_timestamp_list = []
+                    word_count = 0
+                    sentence_start_time = None
+                    split_index = None
+
+                # if the max word limit is reached or already reached, and if at least
+                # one punctuation has been found, then end the sentence and start a new one
+                elif word_count >= max_words and split_index != None:                    
+                    cut_sentence = ' '.join(word_list[:split_index + 1])                
+                    sentence_end_time = word_timestamp_list[split_index]['end']
+
+                    df = self.add_row(df, (sentence_start_time, sentence_end_time), cut_sentence, word_timestamp_list[:split_index + 1])
+
+                    word_list = word_list[split_index + 1:]
+                    word_count = len(word_list)
+                    word_timestamp_list = word_timestamp_list[split_index + 1:]   
+                    split_index = None
+
+                    # if after the split, there is still remaining words, update the starting time
+                    # to that one in order to start a new sentence
+                    if word_count != 0:
+                        sentence_start_time = word_timestamp_list[0]['start']
+                    else:
+                        sentence_start_time = None
+
+                
+                
 
                 # add word to current sentence (list of words)
                 word = word_info['word']
                 word_list.append(word)
                 word_timestamp_list.append(word_info)
                 word_count += 1
-
+                prev_word_end_time = word_info['end']
+                
+                if sentence_start_time == None:
+                    sentence_start_time = word_info['start']
+                
                 # if the word includes any punctuations, keep track of it's location in the 
                 # current word list, update it if another one has been found
                 if any(char in chars_to_check for char in word):
                     split_index = word_count - 1
-                    
-                # if the max word limit is reached or already reached, and if at least
-                # one punctuation has been found, then end the sentence and start a new one
-                if word_count >= max_words and split_index != None:                    
-                    sentence = ' '.join(word_list[:split_index + 1])                
-                    end_time = word_timestamp_list[split_index]['end']
 
-                    df = self.add_row(df, (start_time, end_time), sentence, word_timestamp_list[:split_index + 1])
-
-                    word_list = word_list[split_index + 1:]
-                    word_count = len(word_list)
-                    word_timestamp_list = word_timestamp_list[split_index + 1:]                    
-
-
-                    # fix this, split index might not need to be reset?
-                    split_index = None
-
-                    # if after the split, there is still remaining words, update the starting time
-                    # to that one in order to start a new sentence
-                    if word_count != 0:
-                        start_time = word_timestamp_list[0]['start']
-                    else:
-                        start_time = None
-                elif i == end_index:
-                    sentence = ' '.join(word_list)                    
-                    end_time = word_timestamp_list[-1]['end']
-                    df = self.add_row(df, (start_time, end_time), sentence, word_timestamp_list)
+                if i == end_index:
+                    cut_sentence = ' '.join(word_list)                    
+                    sentence_end_time = word_info['end']
+                    df = self.add_row(df, (sentence_start_time, sentence_end_time), cut_sentence, word_timestamp_list)
             return df, 0
         except Exception as e:
             print(f"Error occurred when combining words: {e}")

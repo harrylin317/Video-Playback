@@ -5,7 +5,6 @@ from processing.extract_audio import ExtractAudio
 from processing.audio_to_text import AudioToText
 from processing.analyze_text import AnalyzeText
 from pipeline.pipeline import Pipeline
-from processing.launch_video import LaunchVideo
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 
 
@@ -26,7 +25,9 @@ def allowed_file(filename):
 def execute_pipeline(filename, segment_len, max_wpm, max_spm):
     # video_number = '2'
 
-    app.config['OUTPUT_FOLDER'] = os.path.join(app.config['OUTPUT_FOLDER'], f'output_{os.path.splitext(filename)[0]}/') 
+    app.config['OUTPUT_FOLDER'] = os.path.join('outputs/', f'output_{os.path.splitext(filename)[0]}/')
+    print(f"filename {os.path.splitext(filename)[0]}") 
+    print(f"output path {app.config['OUTPUT_FOLDER']}") 
     # app.config['OUTPUT_FOLDER'] = f'outputs/output_{video_number}/'
 
     if not os.path.exists(app.config['OUTPUT_FOLDER']):
