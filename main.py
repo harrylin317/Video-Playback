@@ -25,9 +25,7 @@ def allowed_file(filename):
 def execute_pipeline(filename, segment_len, max_wpm, max_spm):
     # video_number = '2'
 
-    app.config['OUTPUT_FOLDER'] = os.path.join('outputs/', f'output_{os.path.splitext(filename)[0]}/')
-    print(f"filename {os.path.splitext(filename)[0]}") 
-    print(f"output path {app.config['OUTPUT_FOLDER']}") 
+    app.config['OUTPUT_FOLDER'] = os.path.join('outputs/', f'output_{os.path.splitext(filename)[0]}/') 
     # app.config['OUTPUT_FOLDER'] = f'outputs/output_{video_number}/'
 
     if not os.path.exists(app.config['OUTPUT_FOLDER']):

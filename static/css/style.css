@@ -1,4 +1,30 @@
 
+html, body {
+  height: 100%; /* Ensure full height for centering */
+  margin: 0;    /* Remove default margin */
+}
+body {
+  display: flex; /* Enable flexbox layout */
+  flex-direction: column; /* Arrange items in a column */
+  justify-content: center; /* Center content vertically */
+  align-items: center; /* Center content horizontally */
+  background-color: #f0f0f0; /* Optional: background color */
+  text-align: center; /* Center text inside the body */
+}
+.content {
+  padding: 20px; /* Add padding inside the content */
+  background-color: #fff; /* Optional: background color of content */
+  border-radius: 8px; /* Optional: rounded corners */
+  box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Optional: shadow for some depth */
+}
+.video-js {
+  margin-bottom: 10px; /* Add some space below the video */
+}
+.controls {
+  margin-top: 5px; /* Add some space above the controls */
+}
+
+
 .vjs-marker
 {
   position:absolute;

@@ -159,8 +159,6 @@ class AnalyzeText:
             df['spm'] = df.apply(self.calculate_spm, threshold_spm=threshold_spm, axis=1)
             # calculate slow ratio. Equals 1 if not need slowing
             df['slow_ratio'] = df.apply(self.calculate_slow_ratio, threshold_wpm=threshold_wpm, threshold_spm=threshold_spm, axis=1)
-            # df['slow_ratio'] = df['wpm'].apply(lambda wpm: round((threshold_wpm/wpm), 2) if wpm > threshold_wpm else 1)
-            # df['slow_ratio'] = df['wpm'].apply(lambda wpm: min(round((wpm/threshold_wpm), 2), 2) if wpm > threshold_wpm else 1)
             df['time+slow'] = df.apply(lambda row : self.combine_tuples(row), axis=1)
             df.to_csv(df_path, index=False)
 
