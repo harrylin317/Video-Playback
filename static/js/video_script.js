@@ -2,7 +2,7 @@ var video = videojs("my-video");
 
 var segments = JSON.parse(document.getElementById("segments-data").textContent);
 
-var toggle = document.getElementById("toggleSlow");
+// var toggle = document.getElementById("toggleSlow");
 
 video.on("timeupdate", adjustVideoPlayback);
 
@@ -22,9 +22,7 @@ video.on("loadedmetadata", function () {
         '" data-time="' +
         time +
         '"><span>' +
-        "time: " +
-        time +
-        " slow_ratio: " +
+        " speed: " +
         segments[i].slow_ratio +
         "</span></div>"
     );
@@ -36,16 +34,17 @@ video.on("loadedmetadata", function () {
   }
 });
 
-function toggleSlow(checkbox) {
-  toggleState = checkbox.checked;
+// function toggleSlow(checkbox) {
+//   toggleState = checkbox.checked;
 
-  if (toggleState) {
-    video.on("timeupdate", adjustVideoPlayback);
-  } else {
-    video.off("timeupdate", adjustVideoPlayback);
-    video.playbackRate(1);
-  }
-}
+//   if (toggleState) {
+//     video.on("timeupdate", adjustVideoPlayback);
+//   } else {
+//     video.off("timeupdate", adjustVideoPlayback);
+//     video.playbackRate(1);
+//   }
+// }
+
 function adjustVideoPlayback() {
   var currentTime = video.currentTime();
   var currentSegment = segments.find(
@@ -55,4 +54,23 @@ function adjustVideoPlayback() {
   if (currentSegment) {
     video.playbackRate(currentSegment.slow_ratio);
   }
+}
+
+var speedSlider = $("#speedSlider").slider();
+
+speedSlider.on("slideStop", changeSpeed);
+
+function changeSpeed() {
+  var currentSpeed = speedSlider.slider("getValue");
+  if (currentSpeed == 0) {
+    console.log("off");
+    video.off("timeupdate", adjustVideoPlayback);
+    video.playbackRate(1);
+  } else if (currentSpeed == 1) {
+    video.on("timeupdate", adjustVideoPlayback);
+  } else {
+    video.on("timeupdate", adjustVideoPlayback);
+  }
+
+  console.log("current " + currentSpeed);
 }

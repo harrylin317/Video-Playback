@@ -12,16 +12,27 @@ body {
   text-align: center; /* Center text inside the body */
 }
 .content {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center elements horizontally */
   padding: 20px; /* Add padding inside the content */
   background-color: #fff; /* Optional: background color of content */
-  border-radius: 8px; /* Optional: rounded corners */
+  border-radius: 10px; /* Optional: rounded corners */
   box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Optional: shadow for some depth */
 }
 .video-js {
-  margin-bottom: 10px; /* Add some space below the video */
+  margin-bottom: 20px; /* Add some space below the video */
 }
-.controls {
+.toggle {
   margin-top: 5px; /* Add some space above the controls */
+}
+
+.return p, .return a {
+  margin: 0;
+  padding: 0;
+}
+.slider {
+  margin-bottom: 10px;
 }
 
 
